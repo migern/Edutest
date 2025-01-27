@@ -1,0 +1,185 @@
+import 'package:flutter/material.dart';
+
+void main() => runApp(EducaGameApp());
+
+class EducaGameApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Aventura Educativa',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: GameScreen(),
+    );
+  }
+}
+
+class GameScreen extends StatefulWidget {
+  @override
+  _GameScreenState createState() => _GameScreenState();
+}
+
+class _GameScreenState extends State<GameScreen> {
+  int puntos = 0;
+  int nivel = 1;
+  List<String> logros = [];
+  int preguntaActual = 0;
+
+  List<Map<String, dynamic>> preguntas = [
+    {
+      "pregunta": "¿Cuánto es 15 + 27?",
+      "opciones": ["42", "38", "45", "32"],
+      "respuesta": 0,
+      "dificultad": 1
+    },
+    {
+      "pregunta": "Capital de Francia",
+      "opciones": ["Londres", "Berlín", "París", "Madrid"],
+      "respuesta": 2,
+      "dificultad": 1
+    },
+  ];
+
+  void verificarRespuesta(int indice) {
+    if (indice == preguntas[preguntaActual]["respuesta"]) {
+      setState(() {
+        puntos += 10;
+        _verificarNivel();
+        _verificarLogros();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("¡Correcto! +10 puntos"), backgroundColor: Colors.green),
+      );
+    } else {
+      setState(() {
+        puntos -= 5;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Incorrecto. -5 puntos"), backgroundColor: Colors.red),
+      );
+    }
+
+    if (preguntaActual < preguntas.length - 1) {
+      setState(() {
+        preguntaActual++;
+      });
+    } else {
+      _mostrarFinJuego();
+    }
+  }
+
+  void _verificarNivel() {
+    if (puntos ~/ 50 > nivel - 1) {
+      setState(() {
+        nivel++;
+      });
+      _mostrarDialogo("¡Nivel $nivel alcanzado!", "Sigue acumulando puntos");
+    }
+  }
+
+  void _verificarLogros() {
+    if (puntos >= 50 && !logros.contains("Aprendiz")) {
+      setState(() {
+        logros.add("Aprendiz");
+      });
+    }
+    if (nivel >= 3 && !logros.contains("Experto")) {
+      setState(() {
+        logros.add("Experto");
+      });
+    }
+  }
+
+  void _mostrarFinJuego() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("¡Fin del juego!"),
+        content: Text("Puntos totales: $puntos\nLogros: ${logros.join(", ")}"),
+        actions: [
+          TextButton(
+            child: Text("Reiniciar"),
+            onPressed: () => Navigator.of(ctx).pop(),
+          )
+        ],
+      ),
+    );
+  }
+
+  void _mostrarDialogo(String titulo, String contenido) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(titulo),
+        content: Text(contenido),
+        actions: [
+          TextButton(
+            child: Text("OK"),
+            onPressed: () => Navigator.of(ctx).pop(),
+          )
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Aventura Educativa"),
+        actions: [
+          Padding(
+            padding: EdgeInsets.only(right: 20),
+            child: Row(
+              children: [
+                Icon(Icons.star, color: Colors.yellow),
+                Text(" $puntos"),
+                SizedBox(width: 20),
+                Icon(Icons.emoji_events, color: Colors.amber),
+                Text(" $nivel"),
+              ],
+            ),
+          )
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(20),
+            child: LinearProgressIndicator(
+              value: preguntaActual / preguntas.length,
+              backgroundColor: Colors.grey,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Text(
+                    preguntas[preguntaActual]["pregunta"],
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 30),
+                  ...List.generate(
+                    preguntas[preguntaActual]["opciones"].length,
+                    (index) => Padding(
+                      padding: EdgeInsets.symmetric(vertical: 5),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: Size(double.infinity, 50),
+                        ),
+                        child: Text(preguntas[preguntaActual]["opciones"][index]),
+                        onPressed: () => verificarRespuesta(index),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
